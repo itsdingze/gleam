@@ -1,0 +1,5 @@
+// Copy this file to Gleam.xcconfig and fill in your values
+// Gleam.xcconfig is git-ignored
+
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+BUNDLE_ID_PREFIX = com.example
