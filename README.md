@@ -2,6 +2,8 @@
 
 A notch mirror app for macOS.
 
+![Gleam opening a mirror from the MacBook notch](docs/demo.gif)
+
 ## Requirements
 
 - macOS 26 (Tahoe) or later
