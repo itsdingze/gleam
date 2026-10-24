@@ -78,3 +78,20 @@ struct MenuBarView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("On") {
+    MenuBarView()
+        .withDependencyContainer(.preview())
+}
+
+#Preview("Paused") {
+    MenuBarView()
+        .withDependencyContainer(.preview(isPaused: true))
+}
+
+#Preview("Camera denied") {
+    MenuBarView()
+        .withDependencyContainer(.preview(cameraPermission: .denied))
+}
+#endif

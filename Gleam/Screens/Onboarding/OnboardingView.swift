@@ -102,3 +102,21 @@ struct OnboardingView: View {
         return "Gleam needs your camera to be your mirror — it's only on while you peek."
     }
 }
+
+#if DEBUG
+#Preview("Welcome") {
+    OnboardingView()
+        .withDependencyContainer(.preview(onboardingStep: .welcome))
+        .frame(width: 360, height: 360)
+        .background(.black)
+        .environment(\.colorScheme, .dark)
+}
+
+#Preview("Camera denied") {
+    OnboardingView()
+        .withDependencyContainer(.preview(onboardingStep: .permission, cameraPermission: .denied))
+        .frame(width: 360, height: 360)
+        .background(.black)
+        .environment(\.colorScheme, .dark)
+}
+#endif

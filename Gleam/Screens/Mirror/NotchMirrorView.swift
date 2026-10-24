@@ -92,3 +92,20 @@ struct NotchMirrorView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Collapsed") {
+    NotchMirrorView(notchSize: CGSize(width: 180, height: 32))
+        .withDependencyContainer(.preview())
+        .background(.gray)
+}
+
+#Preview("Shown from the menu") {
+    let container = DependencyContainer.preview()
+    let _ = container.mirrorViewModel.pin()
+
+    NotchMirrorView(notchSize: CGSize(width: 180, height: 32))
+        .withDependencyContainer(container)
+        .background(.gray)
+}
+#endif
