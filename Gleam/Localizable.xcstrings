@@ -1,0 +1,81 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Auto update" : {
+
+    },
+    "Camera Unavailable" : {
+
+    },
+    "Camera permission is required to use Gleam." : {
+
+    },
+    "Continue" : {
+
+    },
+    "Finish the setup to turn Gleam on." : {
+
+    },
+    "Give it the green light in System Settings." : {
+
+    },
+    "Gleam could not start the camera." : {
+
+    },
+    "Gleam needs your camera to be your mirror — it's only on while you peek." : {
+
+    },
+    "Gleam off" : {
+
+    },
+    "Gleam on" : {
+
+    },
+    "Hide Mirror" : {
+
+    },
+    "I'm here!" : {
+
+    },
+    "Launch at startup" : {
+
+    },
+    "Live mirrored camera preview" : {
+
+    },
+    "One last thing" : {
+
+    },
+    "Oops, camera says no" : {
+
+    },
+    "Open System Settings" : {
+
+    },
+    "Pause" : {
+
+    },
+    "Psst, up here" : {
+
+    },
+    "Quit" : {
+
+    },
+    "Resume" : {
+
+    },
+    "Show Mirror" : {
+
+    },
+    "Slide your pointer up to the notch and Gleam appears." : {
+
+    },
+    "Sneak a peek" : {
+
+    },
+    "There's a little mirror hiding in your notch." : {
+
+    }
+  },
+  "version" : "1.0"
+}

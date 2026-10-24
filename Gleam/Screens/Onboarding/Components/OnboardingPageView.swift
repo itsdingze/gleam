@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct OnboardingPageView<Icon: View, Actions: View>: View {
-    let title: String
-    let message: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
     @ViewBuilder let icon: () -> Icon
     @ViewBuilder let actions: () -> Actions
 

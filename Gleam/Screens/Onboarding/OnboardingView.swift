@@ -88,14 +88,14 @@ struct OnboardingView: View {
         }
     }
 
-    private var permissionTitle: String {
+    private var permissionTitle: LocalizedStringKey {
         if viewModel.cameraPermission == .denied {
             return "Oops, camera says no"
         }
         return "One last thing"
     }
 
-    private var permissionMessage: String {
+    private var permissionMessage: LocalizedStringKey {
         if viewModel.cameraPermission == .denied {
             return "Give it the green light in System Settings."
         }

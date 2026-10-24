@@ -54,7 +54,7 @@ final class MenuBarViewModel {
     }
 
     var actionTitle: String {
-        appState.isPaused ? "Resume" : "Pause"
+        appState.isPaused ? String(localized: "Resume") : String(localized: "Pause")
     }
 
     var actionIsResume: Bool {
