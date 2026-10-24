@@ -45,6 +45,18 @@ done
 fail() { echo "ERROR: $*" >&2; exit 1; }
 step() { echo; echo "==> $*"; }
 
+compare_versions() {
+  local IFS=.
+  local -a left=($1) right=($2)
+  local i
+  for ((i = 0; i < ${#left[@]} || i < ${#right[@]}; i++)); do
+    local l="${left[i]:-0}" r="${right[i]:-0}"
+    if ((10#$l > 10#$r)); then echo 1; return; fi
+    if ((10#$l < 10#$r)); then echo -1; return; fi
+  done
+  echo 0
+}
+
 step "Preflight"
 for tool in create-dmg gh xcrun ditto; do
   command -v "$tool" >/dev/null || fail "$tool not found on PATH"
@@ -63,12 +75,34 @@ GENERATE_APPCAST="${GENERATE_APPCAST:-$(find "$HOME/Library/Developer/Xcode/Deri
 
 REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
+BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist")"
 TAG="v$VERSION"
 DMG_NAME="Gleam.dmg"
 DOWNLOAD_PREFIX="https://github.com/$REPO/releases/download/$TAG/"
 echo "repo    $REPO"
 echo "app     $APP"
 echo "version $VERSION"
+echo "build   $BUILD"
+
+step "Checking build number against the live feed"
+[[ "$BUILD" =~ ^[0-9]+(\.[0-9]+)*$ ]] || fail "CFBundleVersion '$BUILD' must be dot-separated numbers"
+LIVE_FEED="$(curl -sfL "https://github.com/$REPO/releases/latest/download/appcast.xml" || true)"
+LIVE_BUILD="$(printf '%s' "$LIVE_FEED" | sed -n \
+  -e 's/.*<sparkle:version>\([^<]*\)<\/sparkle:version>.*/\1/p' \
+  -e 's/.*sparkle:version="\([^"]*\)".*/\1/p' | head -1)"
+if [ -z "$LIVE_BUILD" ]; then
+  echo "No live feed found, skipping."
+elif ! [[ "$LIVE_BUILD" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+  fail "Live sparkle:version '$LIVE_BUILD' is not dot-separated numbers, so it can't be compared. Check the published appcast."
+else
+  case "$(compare_versions "$BUILD" "$LIVE_BUILD")" in
+    1) echo "build $BUILD > live $LIVE_BUILD" ;;
+    0) gh release view "$TAG" >/dev/null 2>&1 \
+         || fail "CFBundleVersion $BUILD equals the live sparkle:version, so Sparkle would not offer this update. Bump CURRENT_PROJECT_VERSION."
+       echo "build $BUILD matches live, republishing $TAG" ;;
+    *) fail "CFBundleVersion $BUILD is lower than the live sparkle:version $LIVE_BUILD. Bump CURRENT_PROJECT_VERSION." ;;
+  esac
+fi
 
 step "Verifying app signature"
 codesign --verify --deep --strict "$APP" || fail "App failed signature verification"
