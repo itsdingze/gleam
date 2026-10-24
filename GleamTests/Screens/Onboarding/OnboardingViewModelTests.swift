@@ -28,7 +28,7 @@ struct OnboardingViewModelTests {
 
     @Test func onboardingStaysVisibleUntilTheRideOutEnds() async {
         let state = AppState(onboardingStep: .permission)
-        let clock = HoldingClockService()
+        let clock = StepClockService()
         let mirror = makeMirror(state: state)
         mirror.showOnboarding()
         let viewModel = makeViewModel(state: state, permission: .authorized, mirror: mirror, clock: clock)
@@ -48,7 +48,7 @@ struct OnboardingViewModelTests {
         let mirror = MirrorViewModel(
             appState: state,
             capture: MockCameraCaptureService(),
-            clock: HoldingClockService()
+            clock: StepClockService()
         )
         mirror.showOnboarding()
         let viewModel = makeViewModel(state: state, permission: .authorized, mirror: mirror)
@@ -116,6 +116,34 @@ struct OnboardingViewModelTests {
         #expect(viewModel.isRequestingPermission == false)
     }
 
+    @Test func aPermissionGrantedInSystemSettingsFinishesOnboarding() async {
+        let state = AppState(onboardingStep: .permission, cameraPermission: .denied)
+        let viewModel = makeViewModel(
+            state: state,
+            permission: .authorized,
+            mirror: makeMirror(state: state)
+        )
+
+        await viewModel.refreshPermission()
+
+        #expect(state.cameraPermission == .authorized)
+        #expect(state.onboardingStep == nil)
+    }
+
+    @Test func aPermissionRefreshBeforeThePermissionStepKeepsOnboardingWhereItIs() async {
+        let state = AppState(onboardingStep: .instructions)
+        let viewModel = makeViewModel(
+            state: state,
+            permission: .authorized,
+            mirror: makeMirror(state: state)
+        )
+
+        await viewModel.refreshPermission()
+
+        #expect(state.cameraPermission == .authorized)
+        #expect(state.onboardingStep == .instructions)
+    }
+
     private func makeMirror(state: AppState) -> MirrorViewModel {
         MirrorViewModel(
             appState: state,
@@ -140,18 +168,4 @@ struct OnboardingViewModelTests {
         )
     }
 
-}
-
-private actor HoldingClockService: ClockService {
-    private var sleepers: [CheckedContinuation<Void, Never>] = []
-
-    func sleep(for duration: Duration) async throws {
-        await withCheckedContinuation { sleepers.append($0) }
-    }
-
-    func releaseAll() {
-        while sleepers.isEmpty == false {
-            sleepers.removeFirst().resume()
-        }
-    }
 }

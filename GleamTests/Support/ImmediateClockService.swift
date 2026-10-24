@@ -2,5 +2,7 @@ import Foundation
 @testable import Gleam
 
 struct ImmediateClockService: ClockService {
-    func sleep(for duration: Duration) async throws {}
+    func sleep(for duration: Duration) async throws {
+        try Task.checkCancellation()
+    }
 }
