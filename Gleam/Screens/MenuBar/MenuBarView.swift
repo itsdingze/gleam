@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 struct MenuBarView: View {
@@ -64,6 +65,10 @@ struct MenuBarView: View {
         }
         .padding(16)
         .frame(width: 240)
+        .onAppear(perform: viewModel.menuDidOpen)
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            viewModel.menuDidOpen()
+        }
     }
 
     private var pauseToggleButton: some View {

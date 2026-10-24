@@ -13,7 +13,7 @@ final class MenuBarViewModel {
     private let logger = Logger(category: "menubar")
     private let bundle: Bundle
 
-    private var isRevertingLaunchAtStartup = false
+    private var isShowingLaunchAtStartup = false
 
     var launchAtStartup: Bool {
         didSet { applyLaunchAtStartup() }
@@ -75,16 +75,27 @@ final class MenuBarViewModel {
         Task { [mirror] in await mirror.collapseImmediately() }
     }
 
+    func menuDidOpen() {
+        showLaunchAtStartup(loginItem.isEnabled())
+        Task { [appState, permission] in
+            appState.cameraPermission = await permission.currentPermission()
+        }
+    }
+
     private func applyLaunchAtStartup() {
-        guard isRevertingLaunchAtStartup == false else { return }
+        guard isShowingLaunchAtStartup == false else { return }
         do {
             try loginItem.setEnabled(launchAtStartup)
         } catch {
             logger.error("Login item update failed: \(error.localizedDescription, privacy: .public)")
-            isRevertingLaunchAtStartup = true
-            launchAtStartup.toggle()
-            isRevertingLaunchAtStartup = false
+            showLaunchAtStartup(!launchAtStartup)
         }
+    }
+
+    private func showLaunchAtStartup(_ enabled: Bool) {
+        isShowingLaunchAtStartup = true
+        launchAtStartup = enabled
+        isShowingLaunchAtStartup = false
     }
 
     func openSystemSettings() {

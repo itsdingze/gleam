@@ -31,6 +31,30 @@ struct MenuBarViewModelTests {
         #expect(loginItem.enabled == false)
     }
 
+    @Test func openingTheMenuShowsALoginItemChangeMadeInSystemSettings() {
+        let loginItem = MockLoginItemService(enabled: false)
+        let viewModel = makeViewModel(loginItem: loginItem)
+
+        loginItem.changeOutsideTheApp(to: true)
+        viewModel.menuDidOpen()
+
+        #expect(viewModel.launchAtStartup == true)
+        #expect(loginItem.setEnabledCallCount == 0)
+    }
+
+    @Test func openingTheMenuPicksUpACameraGrantMadeInSystemSettings() async {
+        let state = AppState(onboardingStep: nil, cameraPermission: .denied)
+        let viewModel = makeViewModel(
+            state: state,
+            permission: MockCameraPermissionService(permission: .authorized)
+        )
+
+        viewModel.menuDidOpen()
+
+        await waitUntil { state.cameraPermission == .authorized }
+        #expect(viewModel.phase == .active)
+    }
+
     @Test func autoUpdateReflectsTheUpdateServiceState() {
         let updates = MockUpdateService(automaticChecksEnabled: false)
         let viewModel = makeViewModel(updates: updates)
@@ -90,13 +114,14 @@ struct MenuBarViewModelTests {
 
     private func makeViewModel(
         state: AppState = AppState(),
+        permission: MockCameraPermissionService = MockCameraPermissionService(permission: .authorized),
         loginItem: MockLoginItemService = MockLoginItemService(),
         updates: MockUpdateService = MockUpdateService(),
         mirror: MirrorViewModel? = nil
     ) -> MenuBarViewModel {
         MenuBarViewModel(
             appState: state,
-            permission: MockCameraPermissionService(permission: .authorized),
+            permission: permission,
             loginItem: loginItem,
             updates: updates,
             mirror: mirror ?? MirrorViewModel(
