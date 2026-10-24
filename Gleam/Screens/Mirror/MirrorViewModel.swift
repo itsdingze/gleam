@@ -23,6 +23,7 @@ final class MirrorViewModel {
 
     private(set) var presentation: MirrorPresentation = .collapsed
     private(set) var isWelcomePeekContentActive = false
+    private(set) var isPinned = false
 
     init(
         appState: AppState,
@@ -61,6 +62,7 @@ final class MirrorViewModel {
         }
 
         session.prepareIfNeeded()
+        guard isPinned == false else { return }
 
         let hoverFrame = layout.hoverFrame(for: presentation)
         if hoverFrame.contains(point) {
@@ -113,6 +115,17 @@ final class MirrorViewModel {
         }
     }
 
+    func pin() {
+        guard appState.isOperational else { return }
+        isPinned = true
+        session.prepareIfNeeded()
+        expand()
+    }
+
+    func unpin() {
+        performCollapse()
+    }
+
     func collapseImmediately() async {
         performCollapse()
         cancelExitGrace()
@@ -131,6 +144,7 @@ final class MirrorViewModel {
     }
 
     private func performCollapse() {
+        isPinned = false
         cancelScheduledCollapse()
         peekTask?.cancel()
         peekTask = nil

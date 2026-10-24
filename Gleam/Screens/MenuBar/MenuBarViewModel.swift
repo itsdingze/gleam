@@ -61,6 +61,26 @@ final class MenuBarViewModel {
         appState.isPaused
     }
 
+    var canShowMirror: Bool {
+        appState.isOperational
+    }
+
+    var isMirrorShown: Bool {
+        mirror.isPinned
+    }
+
+    var mirrorActionTitle: String {
+        mirror.isPinned ? String(localized: "Hide Mirror") : String(localized: "Show Mirror")
+    }
+
+    func toggleMirror() {
+        if mirror.isPinned {
+            mirror.unpin()
+        } else {
+            mirror.pin()
+        }
+    }
+
     var versionLabel: String {
         guard let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String else {
             return ""

@@ -112,6 +112,33 @@ struct MenuBarViewModelTests {
         #expect(stopCount >= 1)
     }
 
+    @Test func theMirrorCanBeShownAndHiddenFromTheMenu() {
+        let state = AppState(onboardingStep: nil, cameraPermission: .authorized)
+        let mirror = MirrorViewModel(
+            appState: state,
+            capture: MockCameraCaptureService(),
+            clock: ImmediateClockService()
+        )
+        let viewModel = makeViewModel(state: state, mirror: mirror)
+
+        viewModel.toggleMirror()
+        #expect(viewModel.isMirrorShown == true)
+        #expect(mirror.presentation == .expanded)
+
+        viewModel.toggleMirror()
+        #expect(viewModel.isMirrorShown == false)
+        #expect(mirror.presentation == .collapsed)
+    }
+
+    @Test func theMirrorActionIsOfferedOnlyWhileGleamIsOn() {
+        let state = AppState(onboardingStep: nil, cameraPermission: .authorized)
+        let viewModel = makeViewModel(state: state)
+        #expect(viewModel.canShowMirror == true)
+
+        state.isPaused = true
+        #expect(viewModel.canShowMirror == false)
+    }
+
     private func makeViewModel(
         state: AppState = AppState(),
         permission: MockCameraPermissionService = MockCameraPermissionService(permission: .authorized),

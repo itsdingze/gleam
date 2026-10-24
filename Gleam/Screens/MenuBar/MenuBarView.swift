@@ -79,5 +79,10 @@ struct MenuBarView: View {
                 .frame(maxWidth: .infinity)
         }
         .controlSize(.extraLarge)
+        .accessibilityActions {
+            if viewModel.canShowMirror {
+                Button(viewModel.mirrorActionTitle, action: viewModel.toggleMirror)
+            }
+        }
     }
 }

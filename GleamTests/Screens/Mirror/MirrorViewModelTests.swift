@@ -218,6 +218,74 @@ struct MirrorViewModelTests {
         #expect(stopCount >= 1)
     }
 
+    @Test func pinningOpensTheMirrorAndStartsCapture() async {
+        let viewModel = makeViewModel(camera: MockCameraCaptureService())
+
+        viewModel.pin()
+
+        #expect(viewModel.presentation == .expanded)
+        await waitUntil { viewModel.captureState == .running }
+        #expect(viewModel.captureState == .running)
+    }
+
+    @Test func aPinnedMirrorStaysOpenWhenThePointerLeaves() async {
+        let viewModel = makeViewModel(camera: MockCameraCaptureService())
+        viewModel.pin()
+
+        viewModel.updatePointer(CGPoint(x: 950, y: 400), layout: layout)
+        await yieldRepeatedly()
+
+        #expect(viewModel.presentation == .expanded)
+    }
+
+    @Test func unpinningCollapsesAndStopsCapture() async {
+        let viewModel = makeViewModel(camera: MockCameraCaptureService())
+        viewModel.pin()
+        await waitUntil { viewModel.captureState == .running }
+
+        viewModel.unpin()
+
+        #expect(viewModel.isPinned == false)
+        #expect(viewModel.presentation == .collapsed)
+        await waitUntil { viewModel.captureState == .idle }
+        #expect(viewModel.captureState == .idle)
+    }
+
+    @Test func pausingReleasesThePin() async {
+        let appState = AppState(onboardingStep: nil, cameraPermission: .authorized)
+        let viewModel = MirrorViewModel(
+            appState: appState,
+            capture: MockCameraCaptureService(),
+            clock: ImmediateClockService()
+        )
+        viewModel.pin()
+
+        appState.isPaused = true
+        await viewModel.collapseImmediately()
+        appState.isPaused = false
+        viewModel.updatePointer(CGPoint(x: 500, y: 880), layout: layout)
+        viewModel.updatePointer(CGPoint(x: 950, y: 400), layout: layout)
+        await waitUntil { viewModel.presentation == .collapsed }
+
+        #expect(viewModel.isPinned == false)
+        #expect(viewModel.presentation == .collapsed)
+    }
+
+    @Test func pinningDoesNothingWhilePaused() {
+        let appState = AppState(onboardingStep: nil, cameraPermission: .authorized)
+        appState.isPaused = true
+        let viewModel = MirrorViewModel(
+            appState: appState,
+            capture: MockCameraCaptureService(),
+            clock: ImmediateClockService()
+        )
+
+        viewModel.pin()
+
+        #expect(viewModel.isPinned == false)
+        #expect(viewModel.presentation == .collapsed)
+    }
+
     private func makeViewModel(camera: MockCameraCaptureService) -> MirrorViewModel {
         MirrorViewModel(
             appState: AppState(onboardingStep: nil, cameraPermission: .authorized),
