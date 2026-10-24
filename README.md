@@ -29,4 +29,4 @@ xcodebuild -project Gleam.xcodeproj -scheme Gleam -destination 'platform=macOS' 
 
 ## License
 
-GPL-3.0, see [LICENSE](LICENSE).
+GPL-3.0, see [LICENSE](LICENSE). Third-party notices are in [THIRD_PARTY_NOTICES.md](Gleam/THIRD_PARTY_NOTICES.md).
