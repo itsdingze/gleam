@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import os
 
 @MainActor
 @Observable
@@ -9,7 +10,7 @@ final class MenuBarViewModel {
     private let loginItem: any LoginItemService
     private let updates: any UpdateService
     private let mirror: MirrorViewModel
-    private let logger: any LoggerService
+    private let logger = Logger(category: "menubar")
     private let bundle: Bundle
 
     private var isRevertingLaunchAtStartup = false
@@ -28,7 +29,6 @@ final class MenuBarViewModel {
         loginItem: any LoginItemService,
         updates: any UpdateService,
         mirror: MirrorViewModel,
-        logger: any LoggerService = OSLogLoggerService(category: "menubar"),
         bundle: Bundle = .main
     ) {
         self.appState = appState
@@ -36,7 +36,6 @@ final class MenuBarViewModel {
         self.loginItem = loginItem
         self.updates = updates
         self.mirror = mirror
-        self.logger = logger
         self.bundle = bundle
         self.launchAtStartup = loginItem.isEnabled()
         self.autoUpdateEnabled = updates.isAutomaticCheckEnabled()
@@ -81,7 +80,7 @@ final class MenuBarViewModel {
         do {
             try loginItem.setEnabled(launchAtStartup)
         } catch {
-            logger.error("Login item update failed: \(error.localizedDescription)")
+            logger.error("Login item update failed: \(error.localizedDescription, privacy: .public)")
             isRevertingLaunchAtStartup = true
             launchAtStartup.toggle()
             isRevertingLaunchAtStartup = false

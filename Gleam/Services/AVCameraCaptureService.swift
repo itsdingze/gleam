@@ -1,16 +1,17 @@
 import AVFoundation
+import os
 
 actor AVCameraCaptureService: CameraCaptureService {
     // AVCaptureSession's start/stop and configuration calls block, so the actor runs on its own
     // serial queue instead of the cooperative pool.
-    private let queue = DispatchSerialQueue(label: "com.dingze.Gleam.camera-session")
+    private let queue = DispatchSerialQueue(label: "\(Bundle.main.bundleIdentifier ?? "Gleam").camera-session")
 
     nonisolated var unownedExecutor: UnownedSerialExecutor {
         queue.asUnownedSerialExecutor()
     }
 
     private let session = AVCaptureSession()
-    private let logger: any LoggerService
+    private let logger = Logger(category: "camera")
     private var isConfigured = false
     private var previewLayer: AVCaptureVideoPreviewLayer?
     private var frameTapOutput: AVCaptureVideoDataOutput?
@@ -23,15 +24,11 @@ actor AVCameraCaptureService: CameraCaptureService {
     private nonisolated static let deviceRetryDelay: TimeInterval = 0.2
     private nonisolated static let firstFrameTimeout = Duration.milliseconds(1_500)
 
-    init(logger: any LoggerService = OSLogLoggerService(category: "camera")) {
-        self.logger = logger
-    }
-
     func prepare() {
         do {
             try configureIfNeeded()
         } catch {
-            logger.error("Camera prepare failed: \(String(describing: error))")
+            logger.error("Camera prepare failed: \(String(describing: error), privacy: .public)")
         }
     }
 
@@ -44,7 +41,7 @@ actor AVCameraCaptureService: CameraCaptureService {
                 session.startRunning()
             }
         } catch {
-            logger.error("Camera start failed: \(String(describing: error))")
+            logger.error("Camera start failed: \(String(describing: error), privacy: .public)")
             throw error
         }
         await waitForFirstFrame(tap)
@@ -163,7 +160,7 @@ actor AVCameraCaptureService: CameraCaptureService {
                 Thread.sleep(forTimeInterval: Self.deviceRetryDelay)
             }
         }
-        logger.error("No camera device found after \(Self.deviceAcquisitionAttempts) attempts")
+        logger.error("No camera device found after \(Self.deviceAcquisitionAttempts, privacy: .public) attempts")
         return nil
     }
 
@@ -195,7 +192,7 @@ actor AVCameraCaptureService: CameraCaptureService {
     }
 
     private func handleRuntimeError(_ description: String) {
-        logger.error("Camera session runtime error: \(description)")
+        logger.error("Camera session runtime error: \(description, privacy: .public)")
         if session.isRunning {
             session.stopRunning()
         }

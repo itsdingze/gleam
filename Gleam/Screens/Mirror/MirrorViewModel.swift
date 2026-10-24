@@ -27,11 +27,10 @@ final class MirrorViewModel {
     init(
         appState: AppState,
         capture: any CameraCaptureService,
-        clock: any ClockService,
-        logger: any LoggerService = OSLogLoggerService(category: "mirror")
+        clock: any ClockService
     ) {
         self.appState = appState
-        self.session = CameraSessionController(capture: capture, logger: logger)
+        self.session = CameraSessionController(capture: capture)
         self.clock = clock
     }
 

@@ -1,11 +1,12 @@
 import AVFoundation
 import Observation
+import os
 
 @MainActor
 @Observable
 final class CameraSessionController {
     private let capture: any CameraCaptureService
-    private let logger: any LoggerService
+    private let logger = Logger(category: "mirror")
 
     private var task: Task<Void, Never>?
     private var generation = 0
@@ -14,9 +15,8 @@ final class CameraSessionController {
     private(set) var state: CaptureState = .idle
     private(set) var previewLayer: AVCaptureVideoPreviewLayer?
 
-    init(capture: any CameraCaptureService, logger: any LoggerService) {
+    init(capture: any CameraCaptureService) {
         self.capture = capture
-        self.logger = logger
     }
 
     func prepareIfNeeded() {
@@ -48,10 +48,10 @@ final class CameraSessionController {
                 let preview = await capture.makePreviewLayer()
                 self?.applyRunning(preview.layer, generation: generation)
             } catch let error as CameraCaptureError {
-                logger.error("Capture failed: \(String(describing: error))")
+                logger.error("Capture failed: \(String(describing: error), privacy: .public)")
                 self?.applyFailed(error, generation: generation)
             } catch {
-                logger.error("Capture failed: \(String(describing: error))")
+                logger.error("Capture failed: \(String(describing: error), privacy: .public)")
                 self?.applyFailed(.cameraUnavailable, generation: generation)
             }
         }

@@ -1,8 +1,4 @@
-import Observation
-import SwiftUI
-
 @MainActor
-@Observable
 final class DependencyContainer {
     let appState: AppState
     let updateService: any UpdateService
@@ -16,15 +12,13 @@ final class DependencyContainer {
         onboardingStore: (any OnboardingStore)? = nil,
         cameraService: (any CameraCaptureService)? = nil,
         clock: (any ClockService)? = nil,
-        logger: (any LoggerService)? = nil,
         updateService: (any UpdateService)? = nil,
         loginItemService: (any LoginItemService)? = nil
     ) {
         let appState = appState ?? AppState()
-        let logger = logger ?? OSLogLoggerService()
         let permissionService = permissionService ?? AVCameraPermissionService()
         let onboardingStore = onboardingStore ?? UserDefaultsOnboardingStore()
-        let cameraService = cameraService ?? AVCameraCaptureService(logger: logger)
+        let cameraService = cameraService ?? AVCameraCaptureService()
         let clock = clock ?? LiveClockService()
         let updateService = updateService ?? SparkleUpdateService()
         let loginItemService = loginItemService ?? SMAppLoginItemService()
@@ -34,8 +28,7 @@ final class DependencyContainer {
         let mirrorViewModel = MirrorViewModel(
             appState: appState,
             capture: cameraService,
-            clock: clock,
-            logger: logger
+            clock: clock
         )
 
         self.mirrorViewModel = mirrorViewModel
@@ -51,8 +44,7 @@ final class DependencyContainer {
             permission: permissionService,
             loginItem: loginItemService,
             updates: updateService,
-            mirror: mirrorViewModel,
-            logger: logger
+            mirror: mirrorViewModel
         )
     }
 }
