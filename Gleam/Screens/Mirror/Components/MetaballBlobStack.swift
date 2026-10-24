@@ -11,25 +11,22 @@ struct MetaballBlobStack: View {
     private static let topBleed: CGFloat = 24
 
     var body: some View {
-        GeometryReader { proxy in
-            Canvas { context, size in
-                let notchPath = notchPath(midX: size.width / 2)
-                let bodyPath = bodyPath(midX: size.width / 2)
+        Canvas { context, size in
+            let notchPath = notchPath(midX: size.width / 2)
+            let bodyPath = bodyPath(midX: size.width / 2)
 
-                var melted = context
-                melted.addFilter(.alphaThreshold(min: 0.5, color: .black))
-                melted.addFilter(.blur(radius: blurRadius))
-                melted.drawLayer { layer in
-                    layer.fill(notchPath, with: .color(.white))
-                    layer.fill(bodyPath, with: .color(.white))
-                }
-
-                context.fill(notchPath, with: .color(.black))
-                context.fill(bodyPath, with: .color(.black))
+            var melted = context
+            melted.addFilter(.alphaThreshold(min: 0.5, color: .black))
+            melted.addFilter(.blur(radius: blurRadius))
+            melted.drawLayer { layer in
+                layer.fill(notchPath, with: .color(.white))
+                layer.fill(bodyPath, with: .color(.white))
             }
-            .frame(width: proxy.size.width, height: proxy.size.height + Self.topBleed)
-            .offset(y: -Self.topBleed)
+
+            context.fill(notchPath, with: .color(.black))
+            context.fill(bodyPath, with: .color(.black))
         }
+        .padding(.top, -Self.topBleed)
     }
 
     private func notchPath(midX: CGFloat) -> Path {

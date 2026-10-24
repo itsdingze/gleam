@@ -22,7 +22,6 @@ struct MirrorLayoutTests {
     }
 
     @Test func openFrameIsExactlyTheNotchPlusATopEdgeEpsilon() {
-        // CGRect's maxY edge is exclusive, so a cursor pinned there reads as outside.
         #expect(layout.openFrame == CGRect(x: 410, y: 868, width: 180, height: 33))
         #expect(layout.hoverFrame(for: .collapsed) == layout.openFrame)
     }

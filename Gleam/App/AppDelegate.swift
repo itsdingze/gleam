@@ -7,7 +7,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panelController: NotchPanelController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Unit tests are hosted inside this app, so `xcodebuild test` launches it.
         guard isRunningAsTestHost == false else { return }
 
         let panelController = NotchPanelController(

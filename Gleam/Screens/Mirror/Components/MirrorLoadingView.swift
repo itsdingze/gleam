@@ -121,7 +121,6 @@ struct MirrorLoadingView<Content: View>: View {
         }
     }
 
-    // The shader pipeline rasterizes small moving blobs with visibly aliased contours; the Canvas filter chain does not.
     private func dots(time: Double, converge: Double) -> some View {
         let radius = LoadingChoreography.ringRadius * (1 - converge)
         let dotDiameter = LoadingChoreography.dotDiameter + (LoadingChoreography.mergedDiameter - LoadingChoreography.dotDiameter) * converge
@@ -185,7 +184,9 @@ struct MirrorLoadingView<Content: View>: View {
     }
 
     private func revealDiameter(progress: CGFloat) -> CGFloat {
-        LoadingChoreography.mergedDiameter + (2 * .mirrorFeedBleed + .mirrorExpandedSide) * 1.42 * progress
+        let feedSide: CGFloat = 2 * .mirrorFeedBleed + .mirrorExpandedSide
+        let coveringDiameter: CGFloat = feedSide * 1.42
+        return LoadingChoreography.mergedDiameter + coveringDiameter * progress
     }
 
     private func smoothstep(_ x: Double) -> Double {
