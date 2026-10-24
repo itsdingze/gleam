@@ -28,4 +28,8 @@ final class AppState {
     var isOperational: Bool {
         phase == .active
     }
+
+    var isAwaitingCameraPermission: Bool {
+        cameraPermission != .authorized || onboardingStep == .permission
+    }
 }

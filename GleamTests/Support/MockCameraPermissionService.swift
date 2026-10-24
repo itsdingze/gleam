@@ -1,9 +1,13 @@
 @testable import Gleam
 
 actor MockCameraPermissionService: CameraPermissionService {
-    private let permission: CameraPermission
+    private var permission: CameraPermission
 
     init(permission: CameraPermission) {
+        self.permission = permission
+    }
+
+    func change(to permission: CameraPermission) {
         self.permission = permission
     }
 

@@ -8,6 +8,7 @@ final class NotchPanelController {
     private let onboardingViewModel: OnboardingViewModel
     private let screenLocator: any NotchScreenLocating
     private let clock: any ClockService
+    private let notificationCenter: NotificationCenter
     private let tracksPointer: Bool
 
     private var panel: MirrorPanel?
@@ -15,16 +16,17 @@ final class NotchPanelController {
     private var globalMonitor: Any?
     private var localMonitor: Any?
     private var screenObserver: NSObjectProtocol?
-    private var idleObservers: [NSObjectProtocol] = []
-    private var lockObserver: NSObjectProtocol?
-    private var refreshTask: Task<Void, Never>?
+    private let idleObserver = SessionIdleObserver()
+    private var launchTask: Task<Void, Never>?
+    private var chromeTask: Task<Void, Never>?
+    private var permissionWatchTask: Task<Void, Never>?
+    private var permissionCheckTask: Task<Void, Never>?
     private var currentLayout: MirrorLayout?
-    private var permissionPollCount = 0
     private var appliedStep: OnboardingStep?
     private var hasAppliedChrome = false
     private var hasBloomedOnboarding = false
 
-    private static let permissionPollThreshold = 5
+    private static let permissionCheckInterval = Duration.seconds(5)
 
     init(
         appState: AppState,
@@ -32,6 +34,7 @@ final class NotchPanelController {
         onboardingViewModel: OnboardingViewModel,
         screenLocator: (any NotchScreenLocating)? = nil,
         clock: (any ClockService)? = nil,
+        notificationCenter: NotificationCenter = .default,
         tracksPointer: Bool = true
     ) {
         self.appState = appState
@@ -39,11 +42,16 @@ final class NotchPanelController {
         self.onboardingViewModel = onboardingViewModel
         self.screenLocator = screenLocator ?? NotchScreenLocator()
         self.clock = clock ?? LiveClockService()
+        self.notificationCenter = notificationCenter
         self.tracksPointer = tracksPointer
     }
 
     var isMirrorVisible: Bool {
         panel?.isVisible ?? false
+    }
+
+    var mirrorLevel: NSWindow.Level? {
+        panel?.level
     }
 
     var mirrorFrame: CGRect? {
@@ -57,18 +65,27 @@ final class NotchPanelController {
     func start() {
         installPointerMonitors()
         installScreenObserver()
-        installIdleObservers()
-        startRefreshLoop()
+        idleObserver.start { [weak self] in self?.collapseMirror() }
+        startLaunchSequence()
     }
 
     func stop() {
         removePointerMonitors()
         removeScreenObserver()
-        removeIdleObservers()
-        refreshTask?.cancel()
-        refreshTask = nil
+        idleObserver.stop()
+        cancelTasks()
         panel?.orderOut(nil)
         panel = nil
+    }
+
+    private func cancelTasks() {
+        for task in [launchTask, chromeTask, permissionWatchTask, permissionCheckTask] {
+            task?.cancel()
+        }
+        launchTask = nil
+        chromeTask = nil
+        permissionWatchTask = nil
+        permissionCheckTask = nil
     }
 
     // MARK: - Pointer tracking (event-driven)
@@ -95,7 +112,7 @@ final class NotchPanelController {
 
     private func installScreenObserver() {
         guard screenObserver == nil else { return }
-        screenObserver = NotificationCenter.default.addObserver(
+        screenObserver = notificationCenter.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
             queue: .main
@@ -105,45 +122,8 @@ final class NotchPanelController {
     }
 
     private func removeScreenObserver() {
-        if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
+        if let screenObserver { notificationCenter.removeObserver(screenObserver) }
         screenObserver = nil
-    }
-
-    // MARK: - Idle teardown
-
-    // A plain screen lock keeps the session on-console, so no NSWorkspace notification reports it.
-    private static let screenLockedNotification = Notification.Name("com.apple.screenIsLocked")
-
-    private func installIdleObservers() {
-        guard idleObservers.isEmpty else { return }
-        let center = NSWorkspace.shared.notificationCenter
-        let names: [Notification.Name] = [
-            NSWorkspace.screensDidSleepNotification,
-            NSWorkspace.willSleepNotification,
-            NSWorkspace.sessionDidResignActiveNotification
-        ]
-        idleObservers = names.map { name in
-            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.collapseMirror() }
-            }
-        }
-        lockObserver = DistributedNotificationCenter.default().addObserver(
-            forName: Self.screenLockedNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.collapseMirror() }
-        }
-    }
-
-    private func removeIdleObservers() {
-        let center = NSWorkspace.shared.notificationCenter
-        idleObservers.forEach(center.removeObserver)
-        idleObservers = []
-        if let lockObserver {
-            DistributedNotificationCenter.default().removeObserver(lockObserver)
-        }
-        lockObserver = nil
     }
 
     private func collapseMirror() {
@@ -162,33 +142,64 @@ final class NotchPanelController {
         applyPanelChrome()
     }
 
-    // MARK: - Housekeeping (low-frequency)
+    // MARK: - Launch
 
     private static let onboardingBloomDelay = Duration.milliseconds(400)
 
-    private func startRefreshLoop() {
-        guard refreshTask == nil else { return }
-        refreshTask = Task { [weak self, clock] in
+    private func startLaunchSequence() {
+        guard launchTask == nil else { return }
+        launchTask = Task { [weak self, clock] in
             await self?.onboardingViewModel.prepare()
+            guard Task.isCancelled == false else { return }
             self?.refreshLayoutAndPanel()
-            if self?.appState.onboardingStep != nil {
-                try? await clock.sleep(for: Self.onboardingBloomDelay)
-                self?.hasBloomedOnboarding = true
-                self?.mirrorViewModel.showOnboarding()
+            self?.observeOnboardingStep()
+            self?.observeCameraPermission()
+            guard self?.appState.onboardingStep != nil else { return }
+            do {
+                try await clock.sleep(for: Self.onboardingBloomDelay)
+            } catch {
+                return
             }
-            while Task.isCancelled == false {
-                do {
-                    try await clock.sleep(for: .seconds(1))
-                } catch {
-                    return
-                }
-                guard let self else { return }
-                self.refreshLayoutAndPanel()
-                self.applyPanelChrome()
-                await self.refreshPermissionWhenNeeded()
+            self?.hasBloomedOnboarding = true
+            self?.mirrorViewModel.showOnboarding()
+        }
+    }
+
+    private func observeOnboardingStep() {
+        chromeTask = Task { [weak self, appState] in
+            for await _ in Observations({ appState.onboardingStep }) {
+                self?.applyPanelChrome()
             }
         }
     }
+
+    // MARK: - Camera permission
+
+    private func observeCameraPermission() {
+        permissionWatchTask = Task { [weak self, appState] in
+            for await isAwaiting in Observations({ appState.isAwaitingCameraPermission }) where isAwaiting {
+                self?.startPermissionChecksIfIdle()
+            }
+        }
+    }
+
+    private func startPermissionChecksIfIdle() {
+        guard permissionCheckTask == nil else { return }
+        permissionCheckTask = Task { [weak self, appState, clock] in
+            defer { self?.permissionCheckTask = nil }
+            while appState.isAwaitingCameraPermission {
+                do {
+                    try await clock.sleep(for: Self.permissionCheckInterval)
+                } catch {
+                    return
+                }
+                guard let onboardingViewModel = self?.onboardingViewModel else { return }
+                await onboardingViewModel.refreshPermission()
+            }
+        }
+    }
+
+    // MARK: - Layout
 
     private func refreshLayoutAndPanel() {
         guard let layout = screenLocator.currentLayout() else {
@@ -218,13 +229,6 @@ final class NotchPanelController {
         panel = nil
         host = nil
         collapseMirror()
-    }
-
-    private func refreshPermissionWhenNeeded() async {
-        permissionPollCount += 1
-        guard permissionPollCount >= Self.permissionPollThreshold else { return }
-        permissionPollCount = 0
-        await onboardingViewModel.refreshPermission()
     }
 
     // MARK: - Panel
@@ -279,10 +283,9 @@ final class NotchPanelController {
     }
 
     isolated deinit {
-        refreshTask?.cancel()
+        cancelTasks()
         removePointerMonitors()
         removeScreenObserver()
-        removeIdleObservers()
     }
 }
 
