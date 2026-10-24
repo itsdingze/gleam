@@ -43,6 +43,7 @@ struct MirrorLoadingView<Content: View>: View {
     var isReady: Bool
     @ViewBuilder var content: () -> Content
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var readyAt: Date?
     @State private var appearedAt: Date?
     @State private var showsContentImmediately: Bool
@@ -56,6 +57,10 @@ struct MirrorLoadingView<Content: View>: View {
     var body: some View {
         if showsContentImmediately {
             content()
+        } else if reduceMotion {
+            content()
+                .opacity(isReady ? 1 : 0)
+                .animation(.easeIn(duration: 0.2), value: isReady)
         } else {
             choreography
         }

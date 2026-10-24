@@ -5,21 +5,27 @@ struct NotchMirrorView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(MirrorViewModel.self) private var viewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack(alignment: .top) {
-            MetaballNotchSilhouette(geometry: geometry, progress: morphProgress)
-                .animation(morphAnimation, value: viewModel.presentation)
+            ZStack(alignment: .top) {
+                MetaballNotchSilhouette(geometry: geometry, progress: morphProgress)
+                    .animation(morphAnimation, value: viewModel.presentation)
 
-            FeedRevealWindow(
-                geometry: geometry,
-                progress: morphProgress,
-                target: viewModel.presentation
-            ) { feed in
-                mirrorContent(feed: feed)
+                FeedRevealWindow(
+                    geometry: geometry,
+                    progress: morphProgress,
+                    target: viewModel.presentation
+                ) { feed in
+                    mirrorContent(feed: feed)
+                }
+                .animation(morphAnimation, value: viewModel.presentation)
             }
-            .animation(morphAnimation, value: viewModel.presentation)
+            .id(reduceMotion ? viewModel.presentation : nil)
+            .transition(.opacity)
         }
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : nil, value: viewModel.presentation)
         .frame(
             width: .mirrorExpandedSide + 2 * .mirrorBounceMargin,
             height: notchSize.height + .mirrorExpandedSide + .mirrorBounceMargin,
@@ -40,8 +46,9 @@ struct NotchMirrorView: View {
         }
     }
 
-    private var morphAnimation: Animation {
-        viewModel.presentation == .collapsed ? .mirrorCollapse : .mirrorExpand
+    private var morphAnimation: Animation? {
+        guard reduceMotion == false else { return nil }
+        return viewModel.presentation == .collapsed ? .mirrorCollapse : .mirrorExpand
     }
 
     private var geometry: NotchMirrorGeometry {

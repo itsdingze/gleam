@@ -30,23 +30,8 @@ struct MenuBarView: View {
 
                 Divider()
 
-                HStack {
-                    Text("Launch at startup")
-                    Spacer()
-                    Toggle("Launch at startup", isOn: $viewModel.launchAtStartup)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                }
-
-                HStack {
-                    Text("Auto update")
-                    Spacer()
-                    Toggle("Auto update", isOn: $viewModel.autoUpdateEnabled)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                }
+                settingToggle("Launch at startup", isOn: $viewModel.launchAtStartup)
+                settingToggle("Auto update", isOn: $viewModel.autoUpdateEnabled)
             }
 
             Divider()
@@ -55,12 +40,10 @@ struct MenuBarView: View {
                 Text(viewModel.versionLabel)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("Quit", role: .destructive) {
-                    viewModel.quit()
-                }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
-                .tint(Color.red)
+                Button("Quit", action: viewModel.quit)
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .keyboardShortcut("q")
             }
         }
         .padding(16)
@@ -69,6 +52,15 @@ struct MenuBarView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
             viewModel.menuDidOpen()
         }
+    }
+
+    private func settingToggle(_ title: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            Text(title)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .toggleStyle(.switch)
+        .controlSize(.small)
     }
 
     private var pauseToggleButton: some View {
