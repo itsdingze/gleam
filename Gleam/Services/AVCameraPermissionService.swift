@@ -8,9 +8,10 @@ struct AVCameraPermissionService: CameraPermissionService {
         permission(from: AVCaptureDevice.authorizationStatus(for: .video))
     }
 
+    @MainActor
     func requestPermission() async -> CameraPermission {
         if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
-            NSApplication.shared.activate(ignoringOtherApps: true)
+            NSApp.activate()
             _ = await AVCaptureDevice.requestAccess(for: .video)
         }
         return await currentPermission()

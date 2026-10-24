@@ -1,5 +1,5 @@
 import Foundation
 
-protocol ClockService: Sendable {
+nonisolated protocol ClockService: Sendable {
     func sleep(for duration: Duration) async throws
 }

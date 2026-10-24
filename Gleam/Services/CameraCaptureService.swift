@@ -4,7 +4,7 @@ nonisolated struct CameraPreviewLayerBox: @unchecked Sendable {
     let layer: AVCaptureVideoPreviewLayer
 }
 
-protocol CameraCaptureService: Sendable {
+nonisolated protocol CameraCaptureService: Sendable {
     func prepare() async
     func start() async throws
     func stop() async

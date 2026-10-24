@@ -78,11 +78,10 @@ struct MirrorLoadingView<Content: View>: View {
                     if reveal > 0 {
                         content()
                             .blur(radius: LoadingChoreography.revealSettleBlur * (1 - reveal))
-                            .overlay(
-                                Color.white
-                                    .opacity(LoadingChoreography.revealFlashOpacity * (1 - reveal))
+                            .overlay {
+                                Color(white: 1, opacity: LoadingChoreography.revealFlashOpacity * (1 - reveal))
                                     .blendMode(.screen)
-                            )
+                            }
                             .clipShape(revealCircle(progress: reveal))
                         revealRim(progress: reveal)
                     }
@@ -195,7 +194,7 @@ struct MirrorLoadingView<Content: View>: View {
     }
 }
 
-private struct RevealCircle: InsettableShape {
+nonisolated private struct RevealCircle: InsettableShape {
     var diameter: CGFloat
     var insetAmount: CGFloat = 0
 
